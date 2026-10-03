@@ -49,7 +49,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
 
 async function analyzeViaBackend(payload) {
   const settings = await chrome.storage.sync.get({
-    backend_url: "http://127.0.0.1:8000"
+    backend_url: "https://linklens-api.onrender.com"
   });
 
   const baseUrl = (settings.backend_url || "http://127.0.0.1:8000").replace(/\/+$/, "");

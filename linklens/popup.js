@@ -8,7 +8,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   const settings = await chrome.storage.sync.get({
     linklens_enabled: true,
     require_alt: true,
-    backend_url: "http://127.0.0.1:8000"
+    backend_url: "https://linklens-api.onrender.com"
   });
 
   toggleEnable.checked = settings.linklens_enabled;
