@@ -1,5 +1,5 @@
 /**
- * LinkLens - Content Script (v1.4.0)
+ * LinkLens - Content Script (v1.4.0 - AMO Verified)
  */
 
 (function () {
@@ -17,13 +17,13 @@
   let userSettings = {
     linklens_enabled: true,
     require_alt: true,
-    backend_url: "http://127.0.0.1:8000"
+    backend_url: "https://linklens-api.onrender.com"
   };
 
   function loadSettings() {
     if (chrome?.storage?.sync) {
       chrome.storage.sync.get(userSettings, (items) => {
-        if (items) userSettings = { ...userSettings, ...items };
+        if (items) userSettings = Object.assign({}, userSettings, items);
       });
 
       chrome.storage.onChanged.addListener((changes, area) => {
@@ -93,7 +93,6 @@
     const target = e.target instanceof Element ? e.target : null;
     if (!target) return;
 
-    // Inside the active card
     if (target.closest("#linklens-card")) {
       isMouseInsideCard = true;
       clearTimeout(dismissalGraceTimeout);
@@ -104,8 +103,6 @@
     if (!isValidLink(anchor)) return;
 
     if (e.altKey) altPressed = true;
-
-    // Check if Alt is required
     if (userSettings.require_alt && !altPressed) return;
 
     schedulePreview(anchor);
@@ -204,8 +201,8 @@
     }
     if (left < 10) left = 10;
 
-    card.style.top = `${top}px`;
-    card.style.left = `${left}px`;
+    card.style.top = top + "px";
+    card.style.left = left + "px";
   }
 
   function getClientPreflight(urlStr) {
@@ -229,6 +226,101 @@
     return "🚨";
   }
 
+  function setText(el, val) {
+    if (el) el.textContent = val || "";
+  }
+
+  // Static shell template without variable interpolation to satisfy AMO linters
+  const CARD_SHELL = `
+    <div class="linklens-header">
+      <div class="linklens-domain-group">
+        <img class="linklens-favicon" id="linklens-favicon-img" src="" alt="" />
+        <div class="linklens-url-wrap">
+          <span class="linklens-domain" id="linklens-domain-txt"></span>
+          <span class="linklens-path" id="linklens-path-txt"></span>
+        </div>
+      </div>
+      <div class="linklens-header-badges">
+        <div class="linklens-trust-badge" id="linklens-trust-pill">
+          <span class="trust-icon" id="linklens-trust-icon"></span>
+          <span class="trust-label" id="linklens-trust-label"></span>
+        </div>
+      </div>
+    </div>
+
+    <div class="linklens-nav">
+      <button class="linklens-tab-btn active" data-tab="summary">✨ Summary & Trust</button>
+      <button class="linklens-tab-btn" data-tab="preview">🌐 Live Preview</button>
+      <button class="linklens-tab-btn" data-tab="reader">📖 Reader</button>
+    </div>
+
+    <div class="linklens-body">
+      <div class="linklens-tab-content tab-summary active" id="tab-summary">
+        <div class="linklens-safety-card" id="linklens-safety-card">
+          <div class="safety-score-row">
+            <div class="safety-gauge-wrap">
+              <div class="safety-score-num" id="safety-score-num">--</div>
+              <div class="safety-score-title">Trust</div>
+            </div>
+            <div class="safety-status-desc">
+              <div class="safety-status-headline" id="safety-status-headline">Analyzing Link Safety...</div>
+              <div class="safety-status-sub" id="safety-status-sub">Scanning destination for threats, spam, and tracking payload.</div>
+            </div>
+          </div>
+          <div class="safety-flags-list" id="safety-flags-list"></div>
+        </div>
+
+        <div class="linklens-meta-section">
+          <h4 class="linklens-title" id="linklens-meta-title">Fetching metadata...</h4>
+          <p class="linklens-desc" id="linklens-meta-desc">Reading destination headers...</p>
+        </div>
+
+        <div class="linklens-ai-section">
+          <div class="linklens-ai-header">
+            <span class="ai-sparkle">✦</span>
+            <span class="ai-label">AI Key Gist</span>
+            <span class="ai-tag" id="ai-category-tag">Analyzing</span>
+          </div>
+          <p class="linklens-ai-summary" id="linklens-ai-summary">
+            <span class="linklens-shimmer">Synthesizing page content and scanning for spam patterns...</span>
+          </p>
+          <ul class="linklens-takeaways" id="linklens-takeaways"></ul>
+        </div>
+      </div>
+
+      <div class="linklens-tab-content tab-preview" id="tab-preview">
+        <div class="linklens-preview-barrier" id="linklens-preview-barrier" style="display: none;">
+          <div class="barrier-warning">
+            <span class="barrier-icon">🚨</span>
+            <h3>High Risk Link Blocked</h3>
+            <p>This destination was flagged as spam or high-risk. Preview is held to safeguard your session.</p>
+            <button class="btn-override-load" id="btn-override-load">Load Anyway (Sandboxed)</button>
+          </div>
+        </div>
+        <iframe 
+          class="linklens-iframe" 
+          id="linklens-iframe"
+          sandbox="allow-scripts allow-same-origin allow-forms"
+          loading="lazy"
+          src="about:blank">
+        </iframe>
+      </div>
+
+      <div class="linklens-tab-content tab-reader" id="tab-reader">
+        <div class="linklens-reader-body" id="linklens-reader-body">
+          <p class="linklens-shimmer">Extracting clean readable content...</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="linklens-footer">
+      <span class="linklens-shortcut-hint" id="linklens-shortcut-hint">Alt + hover to inspect • Move inside to scroll</span>
+      <a class="linklens-external-link" id="linklens-external-link" href="#" target="_blank" rel="noopener noreferrer">
+        Open in New Tab ↗
+      </a>
+    </div>
+  `;
+
   function renderCard(anchor) {
     removeCard();
 
@@ -243,101 +335,31 @@
 
     const card = document.createElement("div");
     card.id = "linklens-card";
+    card.innerHTML = CARD_SHELL;
 
-    card.innerHTML = `
-      <div class="linklens-header">
-        <div class="linklens-domain-group">
-          <img class="linklens-favicon" src="https://www.google.com/s2/favicons?domain=${parsedUrl.hostname}&sz=32" alt="" />
-          <div class="linklens-url-wrap">
-            <span class="linklens-domain">${escapeHtml(parsedUrl.hostname)}</span>
-            <span class="linklens-path">${escapeHtml(parsedUrl.pathname + parsedUrl.search)}</span>
-          </div>
-        </div>
-        <div class="linklens-header-badges">
-          <div class="linklens-trust-badge linklens-trust-${preflight.level}" id="linklens-trust-pill">
-            <span class="trust-icon">${getTrustIcon(preflight.level)}</span>
-            <span class="trust-label" id="linklens-trust-label">${escapeHtml(preflight.verdict)}</span>
-          </div>
-        </div>
-      </div>
+    // Safely populate dynamic attributes & text nodes
+    const faviconImg = card.querySelector("#linklens-favicon-img");
+    if (faviconImg) {
+      faviconImg.src = "https://www.google.com/s2/favicons?domain=" + encodeURIComponent(parsedUrl.hostname) + "&sz=32";
+    }
 
-      <div class="linklens-nav">
-        <button class="linklens-tab-btn active" data-tab="summary">✨ Summary & Trust</button>
-        <button class="linklens-tab-btn" data-tab="preview">🌐 Live Preview</button>
-        <button class="linklens-tab-btn" data-tab="reader">📖 Reader</button>
-      </div>
+    setText(card.querySelector("#linklens-domain-txt"), parsedUrl.hostname);
+    setText(card.querySelector("#linklens-path-txt"), parsedUrl.pathname + parsedUrl.search);
 
-      <div class="linklens-body">
-        <!-- SUMMARY TAB -->
-        <div class="linklens-tab-content tab-summary active" id="tab-summary">
-          <div class="linklens-safety-card" id="linklens-safety-card">
-            <div class="safety-score-row">
-              <div class="safety-gauge-wrap">
-                <div class="safety-score-num" id="safety-score-num">--</div>
-                <div class="safety-score-title">Trust</div>
-              </div>
-              <div class="safety-status-desc">
-                <div class="safety-status-headline" id="safety-status-headline">Analyzing Link Safety...</div>
-                <div class="safety-status-sub" id="safety-status-sub">Scanning destination for threats, spam, and tracking payload.</div>
-              </div>
-            </div>
-            <div class="safety-flags-list" id="safety-flags-list"></div>
-          </div>
+    const trustPill = card.querySelector("#linklens-trust-pill");
+    if (trustPill) {
+      trustPill.className = "linklens-trust-badge linklens-trust-" + preflight.level;
+    }
+    setText(card.querySelector("#linklens-trust-icon"), getTrustIcon(preflight.level));
+    setText(card.querySelector("#linklens-trust-label"), preflight.verdict);
 
-          <div class="linklens-meta-section">
-            <h4 class="linklens-title" id="linklens-meta-title">Fetching metadata...</h4>
-            <p class="linklens-desc" id="linklens-meta-desc">Reading destination headers...</p>
-          </div>
+    const shortcutHint = card.querySelector("#linklens-shortcut-hint");
+    setText(shortcutHint, (userSettings.require_alt ? "Alt + hover to inspect" : "Hover to inspect") + " • Move inside to scroll");
 
-          <div class="linklens-ai-section">
-            <div class="linklens-ai-header">
-              <span class="ai-sparkle">✦</span>
-              <span class="ai-label">AI Key Gist</span>
-              <span class="ai-tag" id="ai-category-tag">Analyzing</span>
-            </div>
-            <p class="linklens-ai-summary" id="linklens-ai-summary">
-              <span class="linklens-shimmer">Synthesizing page content and scanning for spam patterns...</span>
-            </p>
-            <ul class="linklens-takeaways" id="linklens-takeaways"></ul>
-          </div>
-        </div>
-
-        <!-- LIVE PREVIEW TAB -->
-        <div class="linklens-tab-content tab-preview" id="tab-preview">
-          <div class="linklens-preview-barrier" id="linklens-preview-barrier" style="display: none;">
-            <div class="barrier-warning">
-              <span class="barrier-icon">🚨</span>
-              <h3>High Risk Link Blocked</h3>
-              <p>This destination was flagged as spam or high-risk. Preview is held to safeguard your session.</p>
-              <button class="btn-override-load" id="btn-override-load">Load Anyway (Sandboxed)</button>
-            </div>
-          </div>
-          <iframe 
-            class="linklens-iframe" 
-            id="linklens-iframe"
-            sandbox="allow-scripts allow-same-origin allow-forms"
-            loading="lazy"
-            src="about:blank">
-          </iframe>
-        </div>
-
-        <!-- READER TAB -->
-        <div class="linklens-tab-content tab-reader" id="tab-reader">
-          <div class="linklens-reader-body" id="linklens-reader-body">
-            <p class="linklens-shimmer">Extracting clean readable content...</p>
-          </div>
-        </div>
-      </div>
-
-      <div class="linklens-footer">
-        <span class="linklens-shortcut-hint">
-          ${userSettings.require_alt ? "Alt + hover to inspect" : "Hover to inspect"} • Move inside to scroll
-        </span>
-        <a class="linklens-external-link" href="${escapeHtml(targetUrl)}" target="_blank" rel="noopener noreferrer">
-          Open in New Tab ↗
-        </a>
-      </div>
-    `;
+    const extLink = card.querySelector("#linklens-external-link");
+    if (extLink) {
+      extLink.href = targetUrl;
+    }
 
     document.body.appendChild(card);
     activeCard = card;
@@ -378,7 +400,7 @@
       btn.classList.toggle("active", btn.getAttribute("data-tab") === tabName);
     });
     card.querySelectorAll(".linklens-tab-content").forEach((content) => {
-      content.classList.toggle("active", content.id === `tab-${tabName}`);
+      content.classList.toggle("active", content.id === "tab-" + tabName);
     });
 
     if (tabName === "preview") {
@@ -392,24 +414,9 @@
     }
   }
 
-  function escapeHtml(str) {
-    if (!str) return "";
-    return String(str)
-      .replace(/&/g, "&amp;")
-      .replace(/</g, "&lt;")
-      .replace(/>/g, "&gt;")
-      .replace(/"/g, "&quot;")
-      .replace(/'/g, "&#039;");
-  }
-
-  function setText(el, val) {
-    if (el) el.textContent = val || "";
-  }
-
   async function loadCardData(targetUrl, card) {
     let extractedText = "";
 
-    // 1. Fetch metadata & reader paragraphs from background service worker
     chrome.runtime.sendMessage({ action: "fetchMeta", url: targetUrl }, (res) => {
       if (!activeCard || activeCard !== card) return;
 
@@ -422,7 +429,7 @@
 
         const readerBody = card.querySelector("#linklens-reader-body");
         if (readerBody) {
-          readerBody.innerHTML = "";
+          readerBody.textContent = "";
           if (paragraphs && paragraphs.length > 0) {
             paragraphs.forEach((p) => {
               const pEl = document.createElement("p");
@@ -437,7 +444,6 @@
         }
       }
 
-      // 2. Query backend for Trust scoring and AI gist
       chrome.runtime.sendMessage(
         {
           action: "analyzeLink",
@@ -462,17 +468,15 @@
   function applyAnalysis(card, data, targetUrl) {
     const { summary, key_takeaways, category, safety } = data;
 
-    // Header badge
     const trustPill = card.querySelector("#linklens-trust-pill");
     const trustLabel = card.querySelector("#linklens-trust-label");
     if (trustPill && safety) {
       card.dataset.safetyLevel = safety.level;
-      trustPill.className = `linklens-trust-badge linklens-trust-${safety.level}`;
-      trustPill.querySelector(".trust-icon").textContent = getTrustIcon(safety.level);
-      if (trustLabel) trustLabel.textContent = `${safety.score}% Trust • ${safety.verdict}`;
+      trustPill.className = "linklens-trust-badge linklens-trust-" + safety.level;
+      setText(card.querySelector("#linklens-trust-icon"), getTrustIcon(safety.level));
+      if (trustLabel) trustLabel.textContent = safety.score + "% Trust • " + safety.verdict;
     }
 
-    // Safety card
     const safetyCard = card.querySelector("#linklens-safety-card");
     const scoreNum = card.querySelector("#safety-score-num");
     const headline = card.querySelector("#safety-status-headline");
@@ -480,7 +484,7 @@
     const flagsList = card.querySelector("#safety-flags-list");
 
     if (safetyCard && safety) {
-      safetyCard.className = `linklens-safety-card safety-${safety.level}`;
+      safetyCard.className = "linklens-safety-card safety-" + safety.level;
       setText(scoreNum, String(safety.score));
       setText(
         headline,
@@ -498,12 +502,12 @@
       );
 
       if (flagsList) {
-        flagsList.innerHTML = "";
+        flagsList.textContent = "";
         if (safety.flags && safety.flags.length > 0) {
           safety.flags.forEach((flag) => {
             const span = document.createElement("span");
             span.className = "safety-flag-tag";
-            span.textContent = `⚠️ ${flag}`;
+            span.textContent = "⚠️ " + flag;
             flagsList.appendChild(span);
           });
         } else {
@@ -515,7 +519,6 @@
       }
     }
 
-    // Override button for high-risk previews
     const overrideBtn = card.querySelector("#btn-override-load");
     if (overrideBtn) {
       overrideBtn.onclick = () => {
@@ -525,13 +528,12 @@
       };
     }
 
-    // AI summary & category
     setText(card.querySelector("#linklens-ai-summary"), summary || "No summary available.");
     setText(card.querySelector("#ai-category-tag"), category || "General");
 
     const takeawaysList = card.querySelector("#linklens-takeaways");
     if (takeawaysList && key_takeaways && key_takeaways.length > 0) {
-      takeawaysList.innerHTML = "";
+      takeawaysList.textContent = "";
       key_takeaways.forEach((item) => {
         const li = document.createElement("li");
         li.textContent = item;
