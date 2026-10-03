@@ -1,0 +1,28 @@
+{
+  "manifest_version": 3,
+  "name": "LinkLens: Live Preview, Reader & AI Trust",
+  "version": "1.4.0",
+  "description": "Interactive preview, reader view, and AI-powered spam & trust analysis on link hover.",
+  "permissions": [
+    "storage",
+    "declarativeNetRequest"
+  ],
+  "host_permissions": [
+    "<all_urls>"
+  ],
+  "background": {
+    "service_worker": "background.js"
+  },
+  "action": {
+    "default_popup": "popup.html",
+    "default_title": "LinkLens Settings"
+  },
+  "content_scripts": [
+    {
+      "matches": ["<all_urls>"],
+      "js": ["content.js"],
+      "css": ["hover-card.css"],
+      "run_at": "document_idle"
+    }
+  ]
+}

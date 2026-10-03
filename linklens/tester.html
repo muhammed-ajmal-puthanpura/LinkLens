@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>LinkLens Security & Spam Test Suite</title>
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      max-width: 760px;
+      margin: 40px auto;
+      padding: 0 20px;
+      line-height: 1.6;
+      color: #333;
+      background: #fdfbf7;
+    }
+    h1 { color: #222; border-bottom: 2px solid #eae4db; padding-bottom: 8px; }
+    .test-card {
+      background: #ffffff;
+      border: 1px solid #eae4db;
+      border-radius: 12px;
+      padding: 16px 20px;
+      margin-bottom: 20px;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.03);
+    }
+    .tier-badge {
+      display: inline-block;
+      font-size: 11px;
+      font-weight: 700;
+      padding: 3px 8px;
+      border-radius: 6px;
+      margin-bottom: 8px;
+      text-transform: uppercase;
+    }
+    .tier-danger { background: #faecea; color: #aa2e2b; }
+    .tier-caution { background: #fdf5ea; color: #a05a18; }
+    .tier-safe { background: #edf6f0; color: #2b6e44; }
+    .link-row { margin: 8px 0; }
+    a { color: #1a66cc; text-decoration: underline; font-weight: 500; }
+    ul { margin: 8px 0 0 20px; padding: 0; font-size: 13px; color: #666; }
+    code { background: #f0eae1; padding: 2px 6px; border-radius: 4px; font-size: 12px; }
+  </style>
+</head>
+<body>
+
+  <h1>🛡️ LinkLens Spam & Security Test Bench</h1>
+  <p>Hold <kbd>Alt</kbd> and hover over each link below to inspect how LinkLens categorizes and scores different threat profiles.</p>
+
+  <!-- TEST CASE 1: Blatant Spam / Phishing Mock -->
+  <div class="test-card">
+    <span class="tier-badge tier-danger">🚨 Expected: Spam / High Risk (Score &lt; 40)</span>
+    <div class="link-row">
+      <a href="http://192.168.1.1/wallet-connect/verify-account?aff_id=999&utm_source=ad&click_id=777&ref_id=fake">
+        Test 1: Mock Phishing IP with Tracker Overload
+      </a>
+    </div>
+    <ul>
+      <li><strong>Triggered rules:</strong> Insecure HTTP (-20), Direct IP address (-35), Deceptive keywords <code>wallet-connect</code> / <code>verify-account</code> (-35), Heavy affiliate payload (-10).</li>
+      <li><strong>Expected behavior:</strong> Terracotta badge, trust score below 20%, Live Preview tab blocked behind safety barrier.</li>
+    </ul>
+  </div>
+
+  <!-- TEST CASE 2: Suspicious Spam TLD & Subdomain Stacking -->
+  <div class="test-card">
+    <span class="tier-badge tier-danger">🚨 Expected: Spam / High Risk (Score &lt; 50)</span>
+    <div class="link-row">
+      <a href="http://account-alert.security.update-payment.bank.click/claim-reward">
+        Test 2: Subdomain Stacking on High-Risk TLD (.click)
+      </a>
+    </div>
+    <ul>
+      <li><strong>Triggered rules:</strong> Insecure HTTP (-20), High-risk TLD <code>.click</code> (-25), Deceptive keyword <code>claim-reward</code> (-35), Subdomain stacking (-15).</li>
+      <li><strong>Expected behavior:</strong> Terracotta badge, multiple safety flag tags displayed.</li>
+    </ul>
+  </div>
+
+  <!-- TEST CASE 3: Heavy Tracker / Adware Redirection Mock -->
+  <div class="test-card">
+    <span class="tier-badge tier-caution">⚠️ Expected: Caution Advised (Score 60–80)</span>
+    <div class="link-row">
+      <a href="https://example.com/promo?utm_source=spam_blast&aff_id=884&click_id=3321&sub_id=promo99">
+        Test 3: Legitimate Domain with Heavy Adware / Tracker Load
+      </a>
+    </div>
+    <ul>
+      <li><strong>Triggered rules:</strong> Heavy affiliate/tracking query string (4+ tracker parameters) (-10).</li>
+      <li><strong>Expected behavior:</strong> Amber Caution badge, tracker warning pill shown in Trust card.</li>
+    </ul>
+  </div>
+
+  <!-- TEST CASE 4: Clean, Trustworthy Link -->
+  <div class="test-card">
+    <span class="tier-badge tier-safe">🛡️ Expected: Trustworthy (Score 95–100)</span>
+    <div class="link-row">
+      <a href="https://en.wikipedia.org/wiki/Hyperlink">
+        Test 4: Clean Verified Link (Wikipedia)
+      </a>
+    </div>
+    <ul>
+      <li><strong>Triggered rules:</strong> Clean HTTPS, established domain, no tracking payload.</li>
+      <li><strong>Expected behavior:</strong> Sage green badge, full AI gist and live preview loaded normally.</li>
+    </ul>
+  </div>
+
+</body>
+</html>

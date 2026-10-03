@@ -1,0 +1,19 @@
+# Python & Virtual Environments
+__pycache__/
+*.py[cod]
+*$py.class
+.venv/
+env/
+venv/
+*.env
+
+# Packaging & Builds
+*.zip
+*.xpi
+web-ext-artifacts/
+
+# OS & Editor
+.DS_Store
+.vscode/
+.idea/
+*.log

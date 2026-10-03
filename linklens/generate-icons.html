@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>LinkLens Icon Generator</title>
+  <style>
+    body {
+      background: #0f172a;
+      color: #f8fafc;
+      font-family: -apple-system, BlinkMacSystemFont, sans-serif;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      height: 100vh;
+      margin: 0;
+    }
+    .card {
+      background: #1e1b4b;
+      padding: 30px 40px;
+      border-radius: 16px;
+      text-align: center;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+      border: 1px solid #4338ca;
+    }
+    button {
+      background: #6366f1;
+      color: white;
+      border: none;
+      padding: 12px 24px;
+      font-size: 15px;
+      font-weight: 600;
+      border-radius: 8px;
+      cursor: pointer;
+      margin-top: 20px;
+      transition: background 0.2s;
+    }
+    button:hover { background: #4f46e5; }
+    canvas { display: none; }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <h2>🔍 LinkLens Icon Generator</h2>
+    <p>Click below to generate and download <code>icon16.png</code>, <code>icon48.png</code>, and <code>icon128.png</code>.</p>
+    <button onclick="generateIcons()">Download All Icons</button>
+  </div>
+
+  <canvas id="canvas"></canvas>
+
+  <script>
+    function drawIcon(ctx, size) {
+      const scale = size / 128;
+      ctx.clearRect(0, 0, size, size);
+
+      // Background Squircle
+      const r = 24 * scale;
+      ctx.fillStyle = '#0f0f1c';
+      ctx.beginPath();
+      ctx.roundRect(0, 0, size, size, r);
+      ctx.fill();
+
+      // Outer Gradient Ring (Lens Rim)
+      const grad = ctx.createLinearGradient(20 * scale, 20 * scale, 100 * scale, 100 * scale);
+      grad.addColorStop(0, '#818cf8');
+      grad.addColorStop(0.5, '#c084fc');
+      grad.addColorStop(1, '#38bdf8');
+
+      ctx.strokeStyle = grad;
+      ctx.lineWidth = 10 * scale;
+      ctx.beginPath();
+      ctx.arc(54 * scale, 54 * scale, 34 * scale, 0, Math.PI * 2);
+      ctx.stroke();
+
+      // Handle
+      ctx.strokeStyle = '#818cf8';
+      ctx.lineWidth = 11 * scale;
+      ctx.lineCap = 'round';
+      ctx.beginPath();
+      ctx.moveTo(80 * scale, 80 * scale);
+      ctx.lineTo(108 * scale, 108 * scale);
+      ctx.stroke();
+
+      // Internal Node / Sparkle (Center)
+      ctx.fillStyle = '#38bdf8';
+      ctx.beginPath();
+      ctx.arc(54 * scale, 54 * scale, 8 * scale, 0, Math.PI * 2);
+      ctx.fill();
+
+      // Sparkle Rays
+      ctx.strokeStyle = '#c084fc';
+      ctx.lineWidth = 3.5 * scale;
+      ctx.beginPath();
+      ctx.moveTo(54 * scale, 32 * scale);
+      ctx.lineTo(54 * scale, 76 * scale);
+      ctx.moveTo(32 * scale, 54 * scale);
+      ctx.lineTo(76 * scale, 54 * scale);
+      ctx.stroke();
+    }
+
+    function downloadSize(size, filename) {
+      const canvas = document.getElementById('canvas');
+      canvas.width = size;
+      canvas.height = size;
+      const ctx = canvas.getContext('2d');
+      drawIcon(ctx, size);
+
+      const link = document.createElement('a');
+      link.download = filename;
+      link.href = canvas.toDataURL('image/png');
+      link.click();
+    }
+
+    function generateIcons() {
+      downloadSize(16, 'icon16.png');
+      setTimeout(() => downloadSize(48, 'icon48.png'), 200);
+      setTimeout(() => downloadSize(128, 'icon128.png'), 400);
+    }
+  </script>
+</body>
+</html>

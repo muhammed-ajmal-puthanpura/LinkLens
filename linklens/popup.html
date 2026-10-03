@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>LinkLens Settings</title>
+  <link rel="stylesheet" href="popup.css" />
+</head>
+<body>
+  <div class="popup-container">
+    <div class="popup-header">
+      <div class="brand">
+        <span class="brand-icon">🔍</span>
+        <span class="brand-name">LinkLens</span>
+      </div>
+      <span class="badge">v1.4.0</span>
+    </div>
+
+    <div class="setting-item">
+      <div class="setting-info">
+        <label for="toggle-enable">Enable LinkLens</label>
+        <span class="setting-desc">Show previews on link hover</span>
+      </div>
+      <input type="checkbox" id="toggle-enable" checked />
+    </div>
+
+    <div class="setting-item">
+      <div class="setting-info">
+        <label for="toggle-alt">Require Alt Key</label>
+        <span class="setting-desc">Hold Alt to inspect links</span>
+      </div>
+      <input type="checkbox" id="toggle-alt" checked />
+    </div>
+
+    <div class="setting-item">
+      <div class="setting-info">
+        <label for="backend-url">Backend Server</label>
+        <span class="setting-desc">API URL for trust & AI gist</span>
+      </div>
+      <input type="text" id="backend-url" value="http://127.0.0.1:8000" class="input-text" />
+    </div>
+
+    <div class="backend-status" id="backend-status">
+      <span class="status-dot"></span> Checking backend connection...
+    </div>
+
+    <button id="btn-save" class="btn-primary">Save Settings</button>
+  </div>
+  <script src="popup.js"></script>
+</body>
+</html>
